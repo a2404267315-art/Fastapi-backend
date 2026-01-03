@@ -123,7 +123,7 @@ class ConversationManagement:
     
     def show_user_conversation(self,user_id,page_size,page_number):
         return self.db.execute(
-            select(Conversation.id,Conversation.title).where(Conversation.id==user_id).limit(page_size).offset((page_number-1)*page_size)
+            select(Conversation.id,Conversation.title).where(Conversation.user_id==user_id).limit(page_size).offset((page_number-1)*page_size)
             )
     
     def update_history_chat(self,chat_id:int,history_chat:list[dict[str,Any]]):

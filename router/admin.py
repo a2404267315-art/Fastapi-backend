@@ -94,7 +94,7 @@ def undo_soft_delete_user(
         )
     else:
         return {
-            "msg":"软删除操作成功",
+            "msg":"该用户取消软删除成功！",
             "user_id":body.user_id
         }
 
