@@ -1,0 +1,50 @@
+from typing import Dict,List,Any
+from datetime import datetime
+from sqlalchemy import String,BigInteger,JSON,Boolean,ForeignKey,func,text,Text
+from sqlalchemy.orm import DeclarativeBase,Mapped,mapped_column, relationship
+class Base(DeclarativeBase):
+    pass
+
+class User(Base):
+    __tablename__="users"
+    __table_args__ = {
+        'mysql_charset': 'utf8mb4',
+        'mysql_collate': 'utf8mb4_unicode_ci'
+    }
+    user_id:Mapped[int]=mapped_column(BigInteger,primary_key=True,autoincrement=True,index=True)
+    name:Mapped[str]=mapped_column(String(50),unique=True)
+    password:Mapped[str]=mapped_column(String(1024))
+    is_banned:Mapped[bool]=mapped_column(Boolean,server_default=text("false"))
+    is_admin:Mapped[bool]=mapped_column(Boolean,server_default=text("false"))
+    is_deleted:Mapped[bool]=mapped_column(Boolean,server_default=text("false"))
+    conversations:Mapped[List["Conversation"]]=relationship(
+        back_populates="owner", cascade="all, delete-orphan"
+    )
+
+class Conversation(Base):
+    __tablename__="conversations"
+    __table_args__ = {
+        'mysql_charset': 'utf8mb4',
+        'mysql_collate': 'utf8mb4_unicode_ci'
+    }
+
+    id:Mapped[int]=mapped_column(BigInteger,primary_key=True,autoincrement=True,index=True)
+    user_id:Mapped[int]=mapped_column(BigInteger,ForeignKey("users.user_id"))
+    owner:Mapped["User"] = relationship(
+        back_populates="conversations" # 指向对方模型里的属性名
+    )
+    title:Mapped[str]=mapped_column(String(50),default="新对话")
+    history_chat:Mapped[List[Dict[str,Any]]]=mapped_column(JSON,default=list)
+    updated_at: Mapped[datetime] = mapped_column(
+        default=func.now(), onupdate=func.now()
+    )
+
+class Character(Base):
+    __tablename__="character"
+    __table_args__ = {
+        'mysql_charset': 'utf8mb4',
+        'mysql_collate': 'utf8mb4_unicode_ci'
+    }
+    id:Mapped[int]=mapped_column(BigInteger,primary_key=True,autoincrement=True,index=True)
+    name:Mapped[str]=mapped_column(String(50),unique=True)
+    system_prompt:Mapped[str]=mapped_column(Text)
