@@ -72,17 +72,7 @@ def login(
     db:Session=Depends(get_db)
 ):
     user_mananger=UserManagement(db)
-    
-    # 调试输出
-    print(f"[DEBUG] 接收到的用户名: '{form_data.username}'")
-    print(f"[DEBUG] 用户名长度: {len(form_data.username)}")
-    print(f"[DEBUG] 用户名编码: {form_data.username.encode('utf-8')}")
-    
     user=user_mananger.get_user_by_name(form_data.username)
-    print(f"[DEBUG] 查询结果: {user}")
-    if user:
-        print(f"[DEBUG] 数据库中的用户名: '{user.name}'")
-    
     user_password=form_data.password 
     if not user or user.is_deleted or not SecurityUtils.verify_password(user_password,hashed_password=user.password):
         raise HTTPException(
