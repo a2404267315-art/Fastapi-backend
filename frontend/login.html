@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>现代风登录 - 黄金比例</title>
+    <style>
+        /* --- 全局变量与重置 --- */
+        :root {
+            --primary-color: #2563eb;
+            /* 现代蓝 */
+            --primary-hover: #1d4ed8;
+            --text-main: #1f2937;
+            --text-sub: #6b7280;
+            --bg-color: #f3f4f6;
+            --input-bg: #f9fafb;
+            --border-color: #e5e7eb;
+            --transition-speed: 0.5s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background-color: var(--bg-color);
+        }
+
+        /* --- 主容器：黄金比例布局 --- */
+        .container {
+            display: flex;
+            height: 100%;
+            width: 100%;
+        }
+
+        /* 左侧：图片区域 (宽) */
+        .left-side {
+            /* 核心：黄金比例 1.618 */
+            flex: 1.618;
+            position: relative;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        /* 右侧：表单区域 (窄) */
+        .right-side {
+            /* 核心：比例 1 */
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #ffffff;
+            padding: 40px;
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.05);
+            /* 左侧投射轻微阴影 */
+            z-index: 10;
+        }
+
+        /* --- 左侧图片轮播样式 --- */
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out, transform 8s ease;
+            /* 慢速缩放效果 */
+            transform: scale(1);
+            object-fit: cover;
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: scale(1.05);
+            /* 激活时轻微放大 */
+        }
+
+        /* 图片上的遮罩层（让文字更清晰） */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.6));
+            z-index: 2;
+        }
+
+        /* 左侧文字内容 */
+        .slide-content {
+            position: absolute;
+            bottom: 60px;
+            left: 60px;
+            z-index: 3;
+            color: white;
+            max-width: 80%;
+        }
+
+        .slide-content h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .slide-content p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        /* --- 右侧登录表单样式 --- */
+        .login-wrapper {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .header {
+            margin-bottom: 2.5rem;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-sub);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border: 1px solid var(--border-color);
+            background-color: var(--input-bg);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+            background-color: #fff;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .actions a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 0.9rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-login:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--text-sub);
+        }
+
+        .footer a {
+            color: var(--text-main);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        /* --- 响应式设计 --- */
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .left-side {
+                flex: 0.4;
+                /* 手机端缩小图片区域，不再强制黄金比 */
+                min-height: 200px;
+            }
+
+            .right-side {
+                flex: 1;
+                border-radius: 20px 20px 0 0;
+                transform: translateY(-20px);
+                /* 稍微上移覆盖图片 */
+            }
+
+            .slide-content {
+                display: none;
+                /* 手机端隐藏图片文字 */
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <!-- 左侧：图片轮播区 (宽) -->
+        <div class="left-side">
+            <div class="overlay"></div>
+
+            <!-- 图片1 -->
+            <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop"
+                class="slide active" alt="Office">
+
+            <!-- 图片2 -->
+            <img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070&auto=format&fit=crop"
+                class="slide" alt="Architecture">
+
+            <!-- 图片3 -->
+            <img src="https://images.unsplash.com/photo-1518655048521-f130df041f66?q=80&w=2070&auto=format&fit=crop"
+                class="slide" alt="Meeting">
+
+            <div class="slide-content">
+                <h2>激发无限创意</h2>
+                <p>连接您的团队，即使相隔万里，也能如临其境般高效协作。</p>
+            </div>
+        </div>
+
+        <!-- 右侧：登录表单区 (窄) -->
+        <div class="right-side">
+            <div class="login-wrapper">
+                <div class="header">
+                    <h1>欢迎回来</h1>
+                    <p>请输入您的账号密码进行登录</p>
+                </div>
+
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="user">用户名</label>
+                        <input type="text" id="user" placeholder="请输入用户名" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">密码</label>
+                        <input type="password" id="password" placeholder="••••••••" required>
+                    </div>
+
+                    <div class="actions">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox"> 记住我
+                        </label>
+                        <a href="#">忘记密码?</a>
+                    </div>
+
+                    <button type="submit" class="btn-login">立即登录</button>
+                </form>
+
+                <div class="footer">
+                    还没有账号? <a href="#">立即注册</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 简单的轮播图逻辑
+        const slides = document.querySelectorAll('.slide');
+        let currentSlide = 0;
+        const slideInterval = 5000; // 5秒切换一次
+
+        function nextSlide() {
+            // 移除当前活动类
+            slides[currentSlide].classList.remove('active');
+
+            // 计算下一张
+            currentSlide = (currentSlide + 1) % slides.length;
+
+            // 添加新的活动类
+            slides[currentSlide].classList.add('active');
+        }
+
+        // 启动定时器
+        setInterval(nextSlide, slideInterval);
+
+        // 可以在这里添加更多文字切换的逻辑（如果需要文字跟随图片变化）
+
+        // --- 登录逻辑 ---
+        const loginForm = document.getElementById('login-form');
+        const emailInput = document.getElementById('user');
+        const passwordInput = document.getElementById('password');
+        const loginBtn = document.querySelector('.btn-login');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // 简单的防抖/禁用按钮
+            const originalBtnText = loginBtn.textContent;
+            loginBtn.disabled = true;
+            loginBtn.textContent = '登录中...';
+
+            const email = emailInput.value;
+            const password = passwordInput.value;
+
+            // 构造 x-www-form-urlencoded 数据
+            const formData = new URLSearchParams();
+            formData.append('username', email); // 注意：后端 OAuth2 默认字段为 username
+            formData.append('password', password);
+
+            // 调试输出
+            console.log('登录用户名:', email);
+            console.log('发送的表单数据:', formData.toString());
+
+            try {
+                // 假设后端运行在本地 8000 端口
+                const API_BASE_URL = 'http://127.0.0.1';
+
+                const response = await fetch(`${API_BASE_URL}/user_auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // 登录成功
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('token_type', data.token_type);
+                    localStorage.setItem('user_info', JSON.stringify({
+                        id: data.user_id,
+                        name: data.user_name
+                    }));
+
+                    // 显示简单反馈
+                    loginBtn.textContent = '登录成功！跳转中...';
+                    loginBtn.style.backgroundColor = '#10b981'; // Success Green
+
+                    // 延迟跳转
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 800);
+                } else {
+                    // 登录失败
+                    // 处理可能的数组形式的 detail (虽然通常是字符串)
+                    const errorMsg = typeof data.detail === 'object' ? JSON.stringify(data.detail) : data.detail;
+                    alert(errorMsg || '登录失败，请检查账号密码');
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = originalBtnText;
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('网络连接错误，请检查后端服务是否启动 (127.0.0.1)');
+                loginBtn.disabled = false;
+                loginBtn.textContent = originalBtnText;
+            }
+        });
+    </script>
+
+</body>
+
+</html>

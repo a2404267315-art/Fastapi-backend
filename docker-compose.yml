@@ -8,7 +8,6 @@ services:
     environment:
       - DATABASE_HOST=db
       - DATABASE_PORT=3306
-      - REDIS_URL=redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy
@@ -59,15 +58,21 @@ services:
       - app_network
 
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
     container_name: cyrene_redis
+    restart: always
+    command: >
+      redis-server --requirepass YourSecurePassword123! --maxmemory 256mb --maxmemory-policy allkeys-lru --maxclients 1000 --timeout 300 --tcp-keepalive 60 --save 900 1 --appendonly yes
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379" # 仅本地访问
+    volumes:
+      - redis_data:/data
     networks:
       - app_network
 
 volumes:
   mysql_data:
+  redis_data:
 
 
 networks:
