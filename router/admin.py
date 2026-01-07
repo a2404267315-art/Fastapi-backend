@@ -244,15 +244,12 @@ def admin_get_chat_history(
     db: Session=Depends(get_db)
 ):
     conversation_management=ConversationManagement(db)
-    if not conversation_management.get_history_chat(body.chat_id):
+    if not conversation_management.get_conversation(body.chat_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="对话不存在！"
         )
-    return {
-        "chat_id":body.chat_id,
-        "history_chat":conversation_management.get_history_chat(body.chat_id)
-    }
+    return conversation_management.get_certain_history_chat(body.chat_id,page_size=body.page_size,page_number=body.page_number)
 
 @router.post("/get_softed_deleted_user")
 @limiter.limit("100/second")

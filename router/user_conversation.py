@@ -34,7 +34,7 @@ def new_conversation(
         "msg":"创建成功！",
         "username":current_user.name,
         "chat_name":chat_name,
-        "chat_id":new_chat.id,
+        "id":new_chat.id,
         "character_name":body.character_name
     }
 
@@ -56,16 +56,34 @@ def send_message_stream(
         )
     if body.whether_regenerate:
         conversation_management.remove_recent_message(body.chat_id)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="没有历史记录！"
+            )
+    conversation_management.send_user_content(body.chat_id,history_chat=[{"role":"user","content":body.message}])
     system_prompt=character_management.get_character_by_name(chat.title.split("_")[0]).system_prompt
-    history_chat=chat.history_chat
-    dialog=CyreneLLMModel.create_dialog(system_prompt,history_chat=history_chat,model=body.model)
-    stream_response=dialog.chatting(contents=body.message,model=body.model)
+    history_chat=conversation_management.get_history_chat(body.chat_id)
+    try:
+        dialog=CyreneLLMModel.create_dialog(system_prompt,history_chat=history_chat,model=body.model)
+        stream_response=dialog.chatting(contents=body.message,model=body.model)
+    except Exception as e:
+        conversation_management.remove_recent_message(body.chat_id)
+        raise HTTPException(
+            status_code=status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS,
+            detail="内部错误"           
+            )
     def router_generator():
-        for chunk in stream_response:
-            yield chunk
-        final_history = dialog.history_chat
-        conversation_management.update_history_chat(body.chat_id, final_history)
-        print(f"Chat {body.chat_id} history saved.")
+        try:
+            for chunk in stream_response:
+                yield chunk
+            final_history = dialog.history_chat
+            conversation_management.update_history_chat(body.chat_id, final_history)
+            print(f"Chat {body.chat_id} history saved.")
+        except Exception as e:
+            print(f"Stream Error: {e}")
+            yield "\n\n[系统错误：生成过程中断，请重试]"
+            conversation_management.remove_recent_message(body.chat_id)
     return StreamingResponse(router_generator(), media_type="text/plain")
 
 @router.post("/get_character_name")
@@ -118,10 +136,8 @@ async def get_chat_history(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="你偷看别人聊天记录干嘛？"
         )
-    return {
-        "chat_id":body.chat_id,
-        "history_chat":conversation_management.get_certain_history_chat(body.chat_id)
-    }
+    return conversation_management.get_certain_history_chat(body.chat_id,page_size=body.page_size,page_number=body.page_number)
+
 
 
 

@@ -18,6 +18,10 @@ RUN pip install --upgrade pip && \
 # Copy the rest of the application
 COPY . .
 
+ENV TZ=Asia/Shanghai
+# 这一步是为了防止某些系统没有时区数据，Ubuntu通常自带，但为了保险：
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 # Expose port
 EXPOSE 8000
 

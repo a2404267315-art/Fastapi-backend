@@ -20,4 +20,6 @@ class GetCurrentUserRequest(BaseModel):
 
 class GetChatHistoryRequest(BaseModel):
     chat_id:int
+    page_size:int=Field(default=10, ge=1, le=100, description="每页条数")
+    page_number:int=Field(default=1, ge=1, description="当前页码")
 
