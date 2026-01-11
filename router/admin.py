@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from schemas.admin_schemas import AdminCreateUserRequest,AdminDeleteUserRequest,AdminBanUserRequest,AdminGetSoftDeletedUserRequest
 from schemas.admin_schemas import AdminListAllUserRequest,AdminCreateCharacterRequest,AdminDeleteCharacterRequest
 from schemas.admin_schemas import AdminNotAllowedWordRequest,AdminGetChatHistoryRequest,AdminNotAllowedWordRequestByID,AdminGetNotAllowedWordRequest
+from schemas.admin_schemas import AdminDeleteConversationRequest
 from security.verification import get_current_admin
 from security.security import SecurityUtils
 from database.utils import get_db
@@ -251,6 +252,23 @@ def admin_get_chat_history(
             detail="对话不存在！"
         )
     return conversation_management.get_certain_history_chat(body.chat_id,page_size=body.page_size,page_number=body.page_number)
+
+@router.post("/delete_conversation")
+@limiter.limit("100/second")
+def admin_delete_conversation(
+    request: Request,
+    body: AdminDeleteConversationRequest,
+    current_user=Depends(get_current_admin),
+    db: Session=Depends(get_db)
+):
+    conversation_management=ConversationManagement(db)
+    if not conversation_management.get_conversation(body.chat_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="对话不存在！"
+        )
+    conversation_management.delete_conversation(body.chat_id)
+    return {"msg":"删除成功！"}
 
 @router.post("/get_softed_deleted_user")
 @limiter.limit("100/second")

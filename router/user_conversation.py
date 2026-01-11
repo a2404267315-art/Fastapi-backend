@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from security.verification import get_current_user
 from database.management import ConversationManagement,CharacterManagement
 from database.utils import get_db
-from schemas.user_conversation_schemas import NewConversationCreateRequest,MessageRequest,GetCharacterRequest,GetCurrentUserRequest,GetChatHistoryRequest
+from schemas.user_conversation_schemas import NewConversationCreateRequest,MessageRequest,GetCharacterRequest,GetCurrentUserRequest,GetChatHistoryRequest,DeleteConversationRequest
 from model.model import CyreneLLMModel
 from security.limit_request import limiter
 from security.not_allowed_words import not_allowed_word
@@ -140,7 +140,27 @@ async def get_chat_history(
         )
     return conversation_management.get_certain_history_chat(body.chat_id,page_size=body.page_size,page_number=body.page_number)
 
-
+@router.post("/delete_conversation")
+@limiter.limit("10/second")
+def delete_conversation(
+    request: Request,
+    body: DeleteConversationRequest,
+    current_user=Depends(get_current_user),
+    db: Session=Depends(get_db)
+):
+    conversation_management=ConversationManagement(db)
+    if not conversation_management.get_conversation(body.chat_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="对话不存在！"
+        )
+    if conversation_management.get_conversation(body.chat_id).user_id!=current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="你偷看别人聊天记录干嘛？"
+        )
+    conversation_management.delete_conversation(body.chat_id)
+    return {"msg":"删除成功！"}
 
 
     
