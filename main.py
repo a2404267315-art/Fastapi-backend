@@ -4,7 +4,7 @@ from database.engine_creating import engine,SessionLocal
 from database.database_structure import User
 from security.security import SecurityUtils
 
-from fastapi import FastAPI
+from fastapi import FastAPI,Request
 from router import user_auth,user_conversation,admin
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
@@ -60,6 +60,8 @@ async def lifespan(app: FastAPI):
     
     yield
     # 2. 关闭时的逻辑 (如果是空则留空)
+    await redis.close()
+    print("Redis connection closed")
 
 app = FastAPI(lifespan=lifespan)
 
@@ -78,6 +80,14 @@ app.add_middleware(SlowAPIMiddleware)
 app.include_router(user_auth.router, prefix="/user_auth", tags=["用户管理接口"])
 app.include_router(user_conversation.router, tags=["聊天相关"])
 app.include_router(admin.router, prefix="/admin", tags=["管理员操作"])
+
+
+@app.get("/",tags=["检查后端服务是否正常"])
+@limiter.limit("120/minute")
+def read_root(request:Request):
+    return {
+        "status":"OK"
+        }
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

@@ -2,12 +2,13 @@ from fastapi import APIRouter,HTTPException,status,Depends,Request
 from sqlalchemy.orm import Session
 
 from schemas.admin_schemas import AdminCreateUserRequest,AdminDeleteUserRequest,AdminBanUserRequest,AdminGetSoftDeletedUserRequest
-from schemas.admin_schemas import AdminListAllUserRequest,AdminCreateCharacterRequest,AdminDeleteCharacterRequest,AdminGetChatHistoryRequest
+from schemas.admin_schemas import AdminListAllUserRequest,AdminCreateCharacterRequest,AdminDeleteCharacterRequest
+from schemas.admin_schemas import AdminNotAllowedWordRequest,AdminGetChatHistoryRequest,AdminNotAllowedWordRequestByID,AdminGetNotAllowedWordRequest
 from security.verification import get_current_admin
 from security.security import SecurityUtils
 from database.utils import get_db
 from database.engine_creating import SessionLocal
-from database.management import UserManagement,ConversationManagement,CharacterManagement
+from database.management import UserManagement,ConversationManagement,CharacterManagement,NotallowedWordManagement
 from security.limit_request import limiter
 
 router=APIRouter()
@@ -263,4 +264,54 @@ def get_softed_deleted_user(
     result_table=user_management.get_soft_deleted_users(page_size=body.page_size,page_number=body.page_number)
     data_list = [row._mapping for row in result_table]
     return data_list
+@router.post("/get_not_allowed_words")
+@limiter.limit("100/second")
+def get_not_allowed_words(
+    request:Request,
+    body:AdminGetNotAllowedWordRequest,
+    create_user=Depends(get_current_admin),
+    db:Session=Depends(get_db)
+):
+    not_allowed_word_management=NotallowedWordManagement(db)
+    result_table=not_allowed_word_management.get_not_allowed_words(page_size=body.page_size,page_number=body.page_number)
+    data_list = [row._mapping for row in result_table]
+    return data_list
 
+@router.post("/add_not_allowed_word")
+@limiter.limit("100/second")
+def add_not_allowed_word(
+    request:Request,
+    body:AdminNotAllowedWordRequest,
+    create_user=Depends(get_current_admin),
+    db:Session=Depends(get_db)
+):
+    not_allowed_word_management=NotallowedWordManagement(db)
+    if not not_allowed_word_management.create_not_allowed_word(body.word):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="该单词已存在！"
+        )
+    else:
+        return {
+            "msg":"该单词已添加！",
+            "word":body.word
+        }
+
+@router.post("/delete_not_allowed_word")
+@limiter.limit("100/second")
+def delete_not_allowed_word(
+    request:Request,
+    body:AdminNotAllowedWordRequestByID,
+    create_user=Depends(get_current_admin),
+    db:Session=Depends(get_db)
+):
+    not_allowed_word_management=NotallowedWordManagement(db)
+    if not not_allowed_word_management.delete_not_allowed_word(body.not_allowed_word_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="该单词不存在！"
+        )
+    else:
+        return {
+            "msg":"该单词已删除！"
+        }

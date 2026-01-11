@@ -33,12 +33,11 @@ class CyreneLLMModel:
         except Exception as e:
             raise ValueError(f"api调用错误{e}")
        
-    
     @classmethod
     def create_dialog(cls,system_prompt,api_key=None,base_url=None,model:str="deepseek-chat",history_chat=None):
         client=OpenAI(
-            api_key=os.environ.get("API_KEY"),
-            base_url=os.environ.get("BASE_URL")
+            api_key=os.environ.get("API_KEY") or api_key,
+            base_url=os.environ.get("BASE_URL") or base_url,
         )
         return cls(client,system_prompt,history_chat,model)
 

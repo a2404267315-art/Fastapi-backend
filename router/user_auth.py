@@ -97,6 +97,6 @@ def login(
             "status":"ok",
             "msg":"登录成功！",
             "user_id":user.user_id,
-            "user_name":user.name,#以后放token
+            "user_name":user.name,
             }
     

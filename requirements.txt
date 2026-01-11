@@ -16,3 +16,4 @@ redis
 PyJWT
 fastapi-cache2[redis]
 captcha
+flashtext

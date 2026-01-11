@@ -64,3 +64,12 @@ class Character(Base):
     id:Mapped[int]=mapped_column(BigInteger,primary_key=True,autoincrement=True,index=True)
     name:Mapped[str]=mapped_column(String(50),unique=True)
     system_prompt:Mapped[str]=mapped_column(Text)
+
+class NotAllowedWord(Base):
+    __tablename__="not_allowed_words"
+    __table_args__ = {
+        'mysql_charset': 'utf8mb4',
+        'mysql_collate': 'utf8mb4_unicode_ci'
+    }
+    id:Mapped[int]=mapped_column(BigInteger,primary_key=True,autoincrement=True,index=True)
+    word:Mapped[str]=mapped_column(String(50),unique=True)

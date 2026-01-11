@@ -28,10 +28,8 @@ wheels/
 mysql_data/
 docker-compose.override.yml
 
-
-
 # IDE
-.ai_memory/
+ai_memory/
 .idea/
 .vscode/
 *.swp

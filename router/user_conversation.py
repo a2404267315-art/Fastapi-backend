@@ -1,5 +1,6 @@
 from fastapi import APIRouter,Depends,HTTPException,status,Request
 from fastapi.responses import StreamingResponse
+from fastapi_cache.decorator import cache
 from sqlalchemy.orm import Session
 
 from security.verification import get_current_user
@@ -8,7 +9,7 @@ from database.utils import get_db
 from schemas.user_conversation_schemas import NewConversationCreateRequest,MessageRequest,GetCharacterRequest,GetCurrentUserRequest,GetChatHistoryRequest
 from model.model import CyreneLLMModel
 from security.limit_request import limiter
-from fastapi_cache.decorator import cache
+from security.not_allowed_words import not_allowed_word
 
 router=APIRouter()
 
@@ -46,6 +47,12 @@ def send_message_stream(
     current_user=Depends(get_current_user),
     db:Session=Depends(get_db)
 ):
+    found_word=not_allowed_word.check_message(body.message,db)
+    if found_word:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"对不起，存在违禁词！打回！"
+        )
     conversation_management=ConversationManagement(db)
     character_management=CharacterManagement(db)
     chat=conversation_management.get_conversation(body.chat_id)
@@ -56,11 +63,6 @@ def send_message_stream(
         )
     if body.whether_regenerate:
         conversation_management.remove_recent_message(body.chat_id)
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="没有历史记录！"
-            )
     conversation_management.send_user_content(body.chat_id,history_chat=[{"role":"user","content":body.message}])
     system_prompt=character_management.get_character_by_name(chat.title.split("_")[0]).system_prompt
     history_chat=conversation_management.get_history_chat(body.chat_id)

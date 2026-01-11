@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session,load_only
 from sqlalchemy import select,insert,delete
 from sqlalchemy.orm.attributes import flag_modified
 
-from .database_structure import User,Conversation,Character,Chat
+from .database_structure import User,Conversation,Character,Chat,NotAllowedWord
 
 class UserManagement:
     def __init__(self,db:Session):
@@ -202,6 +202,9 @@ class CharacterManagement:
         self.db=db
 
     def create_character(self,name,system_prompt):
+        character=self.get_character_by_name(name)
+        if character:
+            return False
         new_character=Character(
             name=name,
             system_prompt=system_prompt
@@ -240,8 +243,41 @@ class CharacterManagement:
     
     def get_character(self,page_size,page_number):
         return self.db.execute(select(Character.id,Character.name).limit(page_size).offset((page_number-1)*page_size))
-
     
+class NotallowedWordManagement:
+    def __init__(self,db:Session):
+        self.db=db
+    def create_not_allowed_word(self,word):
+        new_not_allowed_word=NotAllowedWord(
+            word=word
+        )
+        self.db.add(new_not_allowed_word)
+        self.db.commit()
+        self.db.refresh(new_not_allowed_word)
+        return new_not_allowed_word
+    def get_not_allowed_words(self,page_size,page_number):
+        return self.db.execute(select(NotAllowedWord.word,NotAllowedWord.id).limit(page_size).offset((page_number-1)*page_size))
+    
+    def get_not_allowed_words_all(self):
+        result=self.db.execute(select(NotAllowedWord)).scalars().all()
+        if not result:
+            return None
+        return [row.word for row in result]
+    def delete_not_allowed_word(self,id):
+        not_allowed_word=self.db.execute(select(NotAllowedWord).where(NotAllowedWord.id==id)).scalar_one_or_none()
+        if not not_allowed_word:
+            return False
+        self.db.delete(not_allowed_word)
+        self.db.commit()
+        return True
+    def update_not_allowed_word(self,id,word):
+        not_allowed_word=self.db.execute(select(NotAllowedWord).where(NotAllowedWord.id==id)).scalar_one_or_none()
+        if not not_allowed_word:
+            return False
+        not_allowed_word.word=word
+        self.db.commit()
+        self.db.refresh(not_allowed_word)
+        return True
 
 
 
