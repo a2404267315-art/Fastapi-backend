@@ -5,9 +5,11 @@ import time
 
 logging.basicConfig(level=logging.INFO)
 Logger = logging.getLogger(__name__)
+
+
 def init_db(engine):
     print(f"Connecting to database")
-    
+
     max_retries = 30
     wait_seconds = 2
 
@@ -16,10 +18,13 @@ def init_db(engine):
             Base.metadata.create_all(engine)
             return
         except Exception as e:
-            Logger.error(f"Attempt {i+1}/{max_retries} failed: Database not ready yet. Retrying in {wait_seconds}s...")
+            Logger.error(
+                f"Attempt {i+1}/{max_retries} failed: Database not ready yet. Retrying in {wait_seconds}s..."
+            )
             Logger.error(f"Error details: {e}")
             time.sleep(wait_seconds)
     raise Exception("Database connection failed after retries")
+
 
 def get_db():
     db = SessionLocal()

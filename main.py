@@ -1,11 +1,11 @@
 from contextlib import asynccontextmanager
 from database.utils import init_db
-from database.engine_creating import engine,SessionLocal
+from database.engine_creating import engine, SessionLocal
 from database.database_structure import User
 from security.security import SecurityUtils
 
-from fastapi import FastAPI,Request
-from router import user_auth,user_conversation,admin
+from fastapi import FastAPI, Request
+from router import user_auth, user_conversation, admin
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 import uvicorn
@@ -20,15 +20,17 @@ from slowapi.middleware import SlowAPIMiddleware
 from security.limit_request import limiter
 
 init_db(engine)
-    
-    # 初始化 Admin 用户
+
+# 初始化 Admin 用户
 load_dotenv(verbose=True)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 1. 启动时的逻辑
     # 初始化数据库表结构
     init_db(engine)
-    
+
     # 初始化 Admin 用户
     load_dotenv(verbose=True)
     try:
@@ -38,13 +40,15 @@ async def lifespan(app: FastAPI):
         # 注意：这里需要从 database_structure 导入 User 模型，或者确保已有查询逻辑
         # 由于当前代码直接构造 User 对象，我们先尝试查询
         existing_admin = db.query(User).filter(User.name == admin_name).first()
-        
+
         if not existing_admin and admin_name:
             print(f"Creating default admin user: {admin_name}")
             admin_user = User(
                 name=admin_name,
-                password=SecurityUtils.get_password_hash(os.environ.get("ADMIN_PASSWORD")),
-                is_admin=True
+                password=SecurityUtils.get_password_hash(
+                    os.environ.get("ADMIN_PASSWORD")
+                ),
+                is_admin=True,
             )
             db.add(admin_user)
             db.commit()
@@ -57,11 +61,12 @@ async def lifespan(app: FastAPI):
     redis = aioredis.from_url(redis_url, encoding="utf8", decode_responses=True)
     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
     print("FastAPI Cache initialized with Redis backend")
-    
+
     yield
     # 2. 关闭时的逻辑 (如果是空则留空)
     await redis.close()
     print("Redis connection closed")
+
 
 app = FastAPI(lifespan=lifespan)
 
@@ -82,12 +87,11 @@ app.include_router(user_conversation.router, tags=["聊天相关"])
 app.include_router(admin.router, prefix="/admin", tags=["管理员操作"])
 
 
-@app.get("/",tags=["检查后端服务是否正常"])
+@app.get("/", tags=["检查后端服务是否正常"])
 @limiter.limit("120/minute")
-def read_root(request:Request):
-    return {
-        "status":"OK"
-        }
+def read_root(request: Request):
+    return {"status": "OK"}
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

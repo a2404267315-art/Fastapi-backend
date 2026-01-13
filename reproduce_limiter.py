@@ -4,6 +4,7 @@ import time
 URL = "http://localhost:8000/user_auth/login"
 # 如果在 Docker 中且端口映射了，或者直接运行 Python
 
+
 def test_limit():
     print(f"Testing Rate Limit on {URL}")
     for i in range(1, 16):
@@ -16,9 +17,10 @@ def test_limit():
                 return
         except Exception as e:
             print(f"Request {i} failed: {e}")
-        # time.sleep(0.1) 
+        # time.sleep(0.1)
 
     print("Rate Limit NOT Triggered (Failure)")
+
 
 if __name__ == "__main__":
     test_limit()
