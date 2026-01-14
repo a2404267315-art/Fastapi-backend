@@ -58,11 +58,19 @@ async def send_message_stream(
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    found_word = not_allowed_word.check_message(body.message, db)
-    if found_word:
+    try:
+        found_word = await run_in_threadpool(
+            not_allowed_word.check_message, body.message, db
+        )
+        if found_word:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"对不起，存在违禁词！打回！",
+            )
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"对不起，存在违禁词！打回！",
+            detail="抱歉，违禁词还没更新，稍后再试",
         )
     conversation_management = ConversationManagement(db)
     character_management = CharacterManagement(db)
