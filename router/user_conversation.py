@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import StreamingResponse
 from fastapi_cache.decorator import cache
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 
 from security.verification import get_current_user
@@ -51,7 +52,7 @@ def new_conversation(
 
 @router.post("/send_message")
 @limiter.limit("15/minute")
-def send_message_stream(
+async def send_message_stream(
     request: Request,
     body: MessageRequest,
     current_user=Depends(get_current_user),
@@ -65,44 +66,58 @@ def send_message_stream(
         )
     conversation_management = ConversationManagement(db)
     character_management = CharacterManagement(db)
-    chat = conversation_management.get_conversation(body.chat_id)
+    chat = await run_in_threadpool(
+        conversation_management.get_conversation, body.chat_id
+    )
     if chat.user_id != current_user.user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="无权访问此对话"
         )
     if body.whether_regenerate:
-        conversation_management.remove_recent_message(body.chat_id)
-    conversation_management.send_user_content(
-        body.chat_id, history_chat=[{"role": "user", "content": body.message}]
+        await run_in_threadpool(
+            conversation_management.remove_recent_message, body.chat_id
+        )
+    await run_in_threadpool(
+        conversation_management.send_user_content,
+        body.chat_id,
+        history_chat=[{"role": "user", "content": body.message}],
     )
     system_prompt = character_management.get_character_by_name(
         chat.title.split("_")[0]
     ).system_prompt
-    history_chat = conversation_management.get_history_chat(body.chat_id)
+    history_chat = await run_in_threadpool(
+        conversation_management.get_history_chat, body.chat_id
+    )
     try:
-        dialog = CyreneLLMModel.create_dialog(
+        dialog = await CyreneLLMModel.create_dialog(
             system_prompt, history_chat=history_chat, model=body.model
         )
         stream_response = dialog.chatting(contents=body.message, model=body.model)
     except Exception as e:
-        conversation_management.remove_recent_message(body.chat_id)
+        await run_in_threadpool(
+            conversation_management.remove_recent_message, body.chat_id
+        )
         raise HTTPException(
             status_code=status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS, detail="内部错误"
         )
 
-    def router_generator():
+    async def router_generator():
         try:
-            for chunk in stream_response:
+            async for chunk in stream_response:
                 yield chunk
             final_history = dialog.history_chat
-            conversation_management.update_history_chat(body.chat_id, final_history)
+            await run_in_threadpool(
+                conversation_management.update_history_chat, body.chat_id, final_history
+            )
             print(f"Chat {body.chat_id} history saved.")
         except Exception as e:
             print(f"Stream Error: {e}")
             yield "\n\n[系统错误：生成过程中断，请重试]"
-            conversation_management.remove_recent_message(body.chat_id)
+            await run_in_threadpool(
+                conversation_management.remove_recent_message, body.chat_id
+            )
 
-    return StreamingResponse(router_generator(), media_type="text/plain")
+    return StreamingResponse(router_generator(), media_type="text/event-stream")
 
 
 @router.post("/get_character_name")

@@ -6,13 +6,9 @@ from schemas.admin_schemas import (
     AdminDeleteUserRequest,
     AdminBanUserRequest,
     AdminGetSoftDeletedUserRequest,
-)
-from schemas.admin_schemas import (
     AdminListAllUserRequest,
     AdminCreateCharacterRequest,
     AdminDeleteCharacterRequest,
-)
-from schemas.admin_schemas import (
     AdminNotAllowedWordRequest,
     AdminGetChatHistoryRequest,
     AdminNotAllowedWordRequestByID,
@@ -22,7 +18,6 @@ from schemas.admin_schemas import AdminDeleteConversationRequest
 from security.verification import get_current_admin
 from security.security import SecurityUtils
 from database.utils import get_db
-from database.engine_creating import SessionLocal
 from database.management import (
     UserManagement,
     ConversationManagement,
